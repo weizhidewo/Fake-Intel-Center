@@ -11,13 +11,13 @@
 |------|--------|--------|
 | **航空** | 商用、私人、军用、喷气机 | OpenSky Network |
 | **海事** | 39个全球港口，10个咽喉要道 | 静态海军情报 |
-| **CCTV** | 2,000+ 摄像头 | TfL, WSDOT, Caltrans, NYC DOT, VicRoads 等 |
+| **CCTV** | 以千为单位的摄像头 | TfL, WSDOT, Caltrans, NYC DOT, VicRoads 等 |
 | **地震** | 实时M2.5级以上 | USGS Earthquake API |
 | **火灾** | 活跃火点 | NASA FIRMS |
-| **新闻** | 24/7 直播流 | 25+ 全球广播商 |
+| **新闻** | 多个直播流 | 25+ 全球广播商 |
 | **天气** | 极端天气事件 | NASA EONET |
 | **空间** | 太阳活动、卫星 | NOAA SWPC, N2YO |
-| **网络** | CVE威胁、漏洞扫描 | NVD, 自定义扫描器 |
+| **网络** | CVE威胁、漏洞扫描 | NVD, 自定义扫描器，OTX |
 | **冲突** | 13个活跃区域 | 静态OSINT情报 |
 | **加密货币** | BTC + ETH 钱包追踪、OFAC SDN匹配 | blockstream.info, Blockscout, OpenSanctions |
 | **Telegram OSINT** | 公开频道的地理标记帖子 | 
