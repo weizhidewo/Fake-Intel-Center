@@ -1,0 +1,22 @@
+{
+  "general": {
+    "apiUrl": "",
+    "apiKey": "",
+    "model": ""
+  },
+  "reasoning": {
+    "apiUrl": "",
+    "apiKey": "",
+    "model": ""
+  },
+  "preprocess": {
+    "apiUrl": "",
+    "apiKey": "",
+    "model": ""
+  },
+  "infosec": {
+    "apiUrl": "",
+    "apiKey": "",
+    "model": ""
+  }
+}

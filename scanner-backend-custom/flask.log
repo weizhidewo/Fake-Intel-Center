@@ -1,0 +1,45 @@
+nohup: 忽略输入
+ * Serving Flask app 'app'
+ * Debug mode: off
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8080
+ * Running on http://172.17.0.2:8080
+[33mPress CTRL+C to quit[0m
+127.0.0.1 - - [10/Jun/2026 19:47:09] "GET /scan/dns?target=csdn.net HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jun/2026 20:03:13] "GET /scan/dns?target=passport.csdn.net HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jun/2026 20:05:34] "GET /scan/dns?target=passport.csdn.net HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jun/2026 20:07:15] "GET /scan/dns?target=passport.csdn.net HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jun/2026 20:11:02] "GET /scan/dns?target=passport.csdn.net HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jun/2026 20:13:08] "GET /scan/dns?target=passport.csdn.net HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jun/2026 20:15:46] "GET /scan/dns?target=passport.csdn.net HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jun/2026 20:19:54] "GET /scan/dns?target=passport.csdn.net HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jun/2026 20:25:27] "GET /scan/dns?target=passport.csdn.net HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jun/2026 20:27:46] "GET /scan/dns?target=passport.csdn.net HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jun/2026 20:29:04] "GET /scan/dns?target=passport.csdn.net HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jun/2026 20:29:38] "[35m[1mGET /scan/ssl?target=DNS+结果+20:29:07+DNS+记录+域名+passport.csdn.net+A+记录+220.185.184.22,+220.185.184.217,+117.149.203.68,+103.41.2.14,+103.41.2.6+CNAME+记录+a3b9fd0a.csdn.net.cname.yunduns.com。 HTTP/1.1[0m" 500 -
+127.0.0.1 - - [10/Jun/2026 20:29:44] "GET /scan/ssl?target=passport.csdn.net HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jun/2026 20:30:28] "GET /scan/subdomains?target=passport.csdn.net HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jun/2026 20:36:07] "GET /scan/subdomains?target=google.com HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jun/2026 20:36:48] "GET /scan/dns?target=passport.csdn.net HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jun/2026 20:40:04] "GET /scan/dns?target=cd%20/home/osiris-master%20%20%23%20备份%20cp%20src/components/OsintPanel.tsx%20/tmp/OsintPanel.tsx.bak_multiline%20%20%23%20使用%20Python%20精确替换%20DNS%20分支（不改变其他）%20python3%20<<%20'EOF'%20import%20re%20%20file_path%20%3D%20'src/components/OsintPanel.tsx'%20with%20open(file_path,%20'r')%20as%20f:%20%20%20%20%20content%20%3D%20f.read()%20%20%23%20新的%20DNS%20分支代码：每个值单独一行（通过组件内部渲染多个%20<div>）%20new_dns%20%3D%20'''%20%20%20%20//%20──%20DNS%20──%20%20%20%20%20if%20(activeTab%20%3D%3D%3D%20'dns')%20{%20%20%20%20%20%20%20const%20domain%20%3D%20r.domain%20||%20query;%20%20%20%20%20%20%20const%20records%20%3D%20r.records%20||%20{};%20%20%20%20%20%20%20const%20nonEmpty%20%3D%20Object.entries(records).filter(([_,%20v])%20%3D>%20Array.isArray(v)%20%26%26%20v.length%20>%200);%20%20%20%20%20%20%20if%20(nonEmpty.length%20%3D%3D%3D%200)%20{%20%20%20%20%20%20%20%20%20return%20<ResultRow%20label%3D"结果"%20value%3D"未查询到记录"%20/>;%20%20%20%20%20%20%20}%20%20%20%20%20%20%20return%20(%20%20%20%20%20%20%20%20%20<div>%20%20%20%20%20%20%20%20%20%20%20<SectionHeader%20title%3D"DNS%20记录"%20icon%3D{Server}%20color%3D"%23448AFF"%20/>%20%20%20%20%20%20%20%20%20%20%20<ResultRow%20label%3D"域名"%20value%3D{domain}%20color%3D"%23448AFF"%20/>%20%20%20%20%20%20%20%20%20%20%20{nonEmpty.map(([type,%20values])%20%3D>%20(%20%20%20%20%20%20%20%20%20%20%20%20%20<div%20key%3D{type}%20className%3D"flex%20items-start%20gap-3%20py-1.5%20border-b%20border-[var(--border-secondary)]/20">%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20<span%20className%3D"text-[9px]%20font-mono%20text-[var(--text-muted)]%20uppercase%20tracking-wider%20w-[90px]%20flex-shrink-0%20pt-0.5">{type}%20记录</span>%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20<div%20className%3D"text-[10px]%20font-mono%20break-all%20flex-1">%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20{values.map((v,%20idx)%20%3D>%20<div%20key%3D{idx}>{v}</div>)}%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20</div>%20%20%20%20%20%20%20%20%20%20%20%20%20</div>%20%20%20%20%20%20%20%20%20%20%20))}%20%20%20%20%20%20%20%20%20</div>%20%20%20%20%20%20%20);%20%20%20%20%20}'''%20%20%23%20替换原有的%20DNS%20分支%20pattern%20%3D%20r'(%20%20%20%20//%20──%20DNS%20──\\n)?\\s*if%20\\(activeTab%20%3D%3D%3D%20\\'dns\\'\\)%20\\{[\\s\\S]*?\\n%20%20%20%20\\}'%20content%20%3D%20re.sub(pattern,%20new_dns,%20content,%20flags%3Dre.DOTALL)%20%20with%20open(file_path,%20'w')%20as%20f:%20%20%20%20%20f.write(content)%20print("✅%20DNS%20分支已替换为每个值单独一行（使用多行%20<div>，不依赖换行符）")%20EOF%20%20%23%20重启%20Next.js%20pkill%20-f%20"next%20dev"%20screen%20-dmS%20osiris%20bash%20-c%20"cd%20/home/osiris-master%20%26%26%20npm%20run%20dev%20--%20--port%203117%202>%261%20|%20tee%20osiris.log"%20%20echo%20"✅%20修复完成，请强制刷新浏览器（Ctrl%2BShift%2BR）测试%20DNS%20扫描（每个%20IP%20应单独一行）" HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jun/2026 20:40:11] "GET /scan/dns?target=passport.csdn.net HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jun/2026 20:40:26] "GET /scan/dns?target=google.com HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jun/2026 20:49:30] "GET /api/scan/ports?target=156.225.23.1&ports=1-1000 HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jun/2026 20:49:41] "GET /api/scan/ports?target=156.225.23.2&ports=1-1000 HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jun/2026 20:50:17] "GET /api/scan/ports?target=156.225.23.2&ports=1-1000 HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jun/2026 20:56:25] "GET /scan/dns?target=passport.csdn.net HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jun/2026 20:56:32] "GET /scan/dns?target=passport.csdn.net HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jun/2026 20:58:33] "GET /scan/dns?target=passport.csdn.net HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jun/2026 21:00:40] "GET /scan/headers?target=csdn.net HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jun/2026 21:00:46] "GET /scan/ssl?target=passport.csdn.net HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jun/2026 21:00:53] "GET /scan/tech?target=www.nnnu.edu.cn HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jun/2026 21:01:47] "GET /scan/subdomains?target=google.com HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jun/2026 23:11:13] "GET /scan/headers?target=baidu.com HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jun/2026 23:12:39] "GET /scan/subdomains?target=Google.com HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jun/2026 23:19:11] "GET /scan/dns?target=baidu.com HTTP/1.1" 200 -
+127.0.0.1 - - [11/Jun/2026 00:01:12] "GET /scan/dns?target=baidu.com HTTP/1.1" 200 -
+127.0.0.1 - - [11/Jun/2026 00:02:32] "GET /scan/headers?target=baidu.com HTTP/1.1" 200 -
+127.0.0.1 - - [11/Jun/2026 00:02:47] "GET /scan/ssl?target=baidu.com HTTP/1.1" 200 -
+127.0.0.1 - - [11/Jun/2026 00:03:46] "GET /scan/subdomains?target=baidu.com HTTP/1.1" 200 -
+127.0.0.1 - - [11/Jun/2026 00:04:06] "GET /scan/tech?target=baidu.com HTTP/1.1" 200 -

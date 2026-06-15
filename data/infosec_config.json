@@ -1,0 +1,11 @@
+{
+  "enabled": true,
+  "intervalHours": 3,
+  "dataSources": {
+    "secCrawler": true,
+    "alienVault": true,
+    "threatBook": false,
+    "nvd": true,
+    "bleepingComputer": true
+  }
+}

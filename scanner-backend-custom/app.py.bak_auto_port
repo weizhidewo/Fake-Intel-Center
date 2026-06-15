@@ -1,0 +1,184 @@
+import subprocess
+import json
+import os
+import time
+import xml.etree.ElementTree as ET
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+
+app = Flask(__name__)
+CORS(app)
+SCANNER_KEY = "my-fixed-scanner-key-32-bytes-long"
+
+def verify_auth(req):
+    token = req.headers.get('Authorization', '').replace('Bearer ', '')
+    return token == SCANNER_KEY
+
+@app.before_request
+def check_auth():
+    if request.method == 'OPTIONS' or verify_auth(request):
+        return
+    return jsonify({'error': 'Unauthorized'}), 401
+
+def parse_target(target):
+    """解析 target，支持 host:port 格式，返回 (host, port)"""
+    if ':' in target:
+        host, port = target.split(':', 1)
+        return host, port
+    return target, None
+
+# ---------- 端口扫描（保持原有） ----------
+def scan_ports_internal(target, ports):
+    cmd = ['nmap', '-sT', '-T4', '--min-rate', '1000', '-p', str(ports), '--open', '-oX', '-', target]
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
+        if result.returncode not in (0,1):
+            return jsonify({'error': result.stderr}), 500
+        root = ET.fromstring(result.stdout)
+        ports_found = []
+        for port in root.findall('.//port'):
+            if port.find('state').get('state') == 'open':
+                service = port.find('service')
+                name = service.get('name') if service is not None else 'unknown'
+                ports_found.append({'port': int(port.get('portid')), 'service': name})
+        return jsonify({'target': target, 'ports': ports_found})
+    except subprocess.TimeoutExpired:
+        return jsonify({'error': 'Scan timeout (30 minutes)'}), 504
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/scan/quick', methods=['GET'])
+def scan_quick():
+    target = request.args.get('target')
+    ports = request.args.get('ports', '1-1000')
+    if not target:
+        return jsonify({'error': 'target required'}), 400
+    return scan_ports_internal(target, ports)
+
+# ---------- HTTP 头部（支持端口） ----------
+@app.route('/scan/headers', methods=['GET'])
+def scan_headers():
+    target = request.args.get('target')
+    if not target:
+        return jsonify({'error': 'target required'}), 400
+    host, port = parse_target(target)
+    url = f"http://{host}:{port}" if port else f"http://{host}"
+    try:
+        cmd = ['whatweb', '--log-json', '-', url]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        headers = {}
+        if result.returncode == 0 and result.stdout:
+            try:
+                data = json.loads(result.stdout.strip().split('\n')[0])
+                headers = data.get('headers', {})
+            except:
+                pass
+        return jsonify({'target': target, 'headers': headers})
+    except subprocess.TimeoutExpired:
+        return jsonify({'error': 'Headers scan timeout'}), 504
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ---------- SSL/TLS（支持端口） ----------
+@app.route('/scan/ssl', methods=['GET'])
+def scan_ssl():
+    target = request.args.get('target')
+    if not target:
+        return jsonify({'error': 'target required'}), 400
+    host, port = parse_target(target)
+    # testssl.sh 接受 host:port 或 https://host:port
+    target_arg = f"{host}:{port}" if port else host
+    temp_json = f"/tmp/testssl_{int(time.time())}.json"
+    try:
+        cmd = ['testssl.sh', '--jsonfile', temp_json, '--color', '0', target_arg]
+        env = os.environ.copy()
+        if 'HTTP_PROXY' in os.environ:
+            env['HTTP_PROXY'] = os.environ['HTTP_PROXY']
+        if 'HTTPS_PROXY' in os.environ:
+            env['HTTPS_PROXY'] = os.environ['HTTPS_PROXY']
+        subprocess.run(cmd, capture_output=True, text=True, timeout=180, env=env)
+        if os.path.exists(temp_json):
+            with open(temp_json, 'r') as f:
+                data = json.load(f)
+            if isinstance(data, list) and len(data) > 0:
+                data = data[0]
+            simplified = {
+                'target': target,
+                'certificate': data.get('certificate', {}),
+                'protocols': data.get('protocols', {}),
+                'ciphers': data.get('ciphers', {}),
+                'vulnerabilities': data.get('vulnerabilities', {})
+            }
+            return jsonify(simplified)
+        else:
+            return jsonify({'error': 'No SSL data', 'stderr': result.stderr if 'result' in locals() else ''}), 500
+    except subprocess.TimeoutExpired:
+        return jsonify({'error': 'SSL scan timeout (180s)'}), 504
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if os.path.exists(temp_json):
+            os.remove(temp_json)
+
+# ---------- 子域名枚举（无端口） ----------
+@app.route('/scan/subdomains', methods=['GET'])
+def scan_subdomains():
+    target = request.args.get('target')
+    if not target:
+        return jsonify({'error': 'target required'}), 400
+    # 如果 target 包含端口，去掉端口部分
+    if ':' in target:
+        target = target.split(':')[0]
+    try:
+        cmd = ['amass', 'enum', '-passive', '-d', target, '-o', '-', '-json']
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        subdomains = []
+        if result.stdout:
+            for line in result.stdout.strip().split('\n'):
+                if not line:
+                    continue
+                try:
+                    data = json.loads(line)
+                    if 'name' in data:
+                        subdomains.append(data['name'])
+                except:
+                    continue
+        return jsonify({'target': target, 'subdomains': subdomains})
+    except subprocess.TimeoutExpired:
+        return jsonify({'error': 'Subdomain enumeration timeout (120s)'}), 504
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ---------- 技术栈探测（支持端口） ----------
+@app.route('/scan/tech', methods=['GET'])
+def scan_tech():
+    target = request.args.get('target')
+    if not target:
+        return jsonify({'error': 'target required'}), 400
+    host, port = parse_target(target)
+    url = f"http://{host}:{port}" if port else f"http://{host}"
+    try:
+        cmd = ['whatweb', '--log-json', '-', '--aggression', '3', url]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        tech = {}
+        if result.returncode == 0 and result.stdout:
+            try:
+                data = json.loads(result.stdout.strip().split('\n')[0])
+                plugins = data.get('plugins', {})
+                for k, v in plugins.items():
+                    if isinstance(v, dict) and 'version' in v:
+                        tech[k] = v['version']
+                    elif isinstance(v, str):
+                        tech[k] = v
+                    else:
+                        tech[k] = 'detected'
+            except:
+                pass
+        return jsonify({'target': target, 'technologies': tech})
+    except subprocess.TimeoutExpired:
+        return jsonify({'error': 'Tech detection timeout (60s)'}), 504
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8080)

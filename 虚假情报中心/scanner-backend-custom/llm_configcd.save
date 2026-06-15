@@ -1,0 +1,279 @@
+# 1. 将您的固定 API 配置写入文件（如果文件已存在则覆盖）
+mkdir -p scanner-backend-custom cat > 
+scanner-backend-custom/llm_config.json << 'EOF' {
+  "apiUrl": "https://api.siliconflow.cn/v1", "apiKey": 
+  "sk-jtqobmwnxymytbeihbgzqxgpzbqmgufdhwtzphdbafoxxtxv", "model": 
+  "deepseek-ai/DeepSeek-V3"
+}
+EOF
+# 2. 备份当前的 OsintPanel.tsx
+cp src/components/OsintPanel.tsx 
+src/components/OsintPanel.tsx.bak_$(date +%Y%m%d_%H%M%S)
+# 3. 重新生成一个正确的 OsintPanel.tsx（基于 bak_subdomain2 并修复 'use 
+# client' 位置）
+cp src/components/OsintPanel.tsx.bak_subdomain2 /tmp/OsintPanel_temp.tsx
+# 确保第一行是 'use client'
+sed -i '1i\'$'\n'"'use client';"$'\n' /tmp/OsintPanel_temp.tsx
+# 删除可能存在的重复 'use client'
+sed -i '/^use client/d' /tmp/OsintPanel_temp.tsx sed -i '1i use client;' 
+/tmp/OsintPanel_temp.tsx
+# 4. 在 TABS 中添加 AI 分析项（图标使用 Terminal，与 GitHub 相同）
+sed -i "/{ id: 'github',/a \ { id: 'ai_analysis', label: 'AI分析', icon: 
+Terminal, placeholder: '', color: '#D4AF37' }," /tmp/OsintPanel_temp.tsx
+# 5. 在 renderStructuredResults 函数中添加 AI 分支（放在技术栈分支之后）
+python3 << 'PYEOF' import re file = '/tmp/OsintPanel_temp.tsx' with 
+open(file, 'r') as f:
+    content = f.read()
+# 找到技术栈分支的结束位置
+tech_start = content.find("if (activeTab === 'tech') {") if tech_start 
+== -1:
+    raise Exception("未找到技术栈分支") brace = 1 i = tech_start + 
+len("if (activeTab === 'tech') {") while i < len(content) and brace > 0:
+    if content[i] == '{': brace += 1 elif content[i] == '}': brace -= 1 
+    i += 1
+tech_end = i
+# AI 分支代码（图标使用 Terminal，配置表单保留）
+ai_branch = '''
+    // AI 分析
+    if (activeTab === 'ai_analysis') { const [aiResult, setAiResult] = 
+      useState<string | null>(null); const [aiLoading, setAiLoading] = 
+      useState(false); const [apiUrl, setApiUrl] = useState(''); const 
+      [apiKey, setApiKey] = useState(''); const [model, setModel] = 
+      useState(''); const [configSaving, setConfigSaving] = 
+      useState(false); const loadAi = async () => {
+        setAiLoading(true); try { const res = await 
+          fetch('/api/ai-analysis'); const data = await res.json(); 
+          setAiResult(data.content);
+        } catch {
+          setAiResult('获取失败');
+        } finally {
+          setAiLoading(false);
+        }
+      };
+      const runAi = async () => { setAiLoading(true); try { const res = 
+          await fetch('/api/ai-analysis', { method: 'POST' }); const 
+          data = await res.json(); setAiResult(data.content);
+        } catch {
+          setAiResult('生成失败');
+        } finally {
+          setAiLoading(false);
+        }
+      };
+      const loadCfg = async () => { try { const res = await 
+          fetch('/api/ai-analysis/config'); const data = await 
+          res.json(); setApiUrl(data.apiUrl || ''); 
+          setApiKey(data.apiKey || ''); setModel(data.model || '');
+        } catch {}
+      };
+      const saveCfg = async () => { setConfigSaving(true); try { await 
+          fetch('/api/ai-analysis/config', {
+            method: 'POST', headers: { 'Content-Type': 
+            'application/json' }, body: JSON.stringify({ apiUrl, apiKey, 
+            model })
+          });
+          alert('配置已保存');
+        } finally {
+          setConfigSaving(false);
+        }
+      };
+      useEffect(() => { if (activeTab === 'ai_analysis') { loadAi(); 
+          loadCfg();
+        }
+      }, [activeTab]);
+      if (aiResult === null && !aiLoading) return <div>加载中...</div>; 
+      return (
+        <div> <SectionHeader title="AI 智能分析" icon={Terminal} 
+          color="#D4AF37" /> <div className="space-y-2 mb-3 p-2 rounded 
+          border border-[#D4AF37]/30 bg-black/20">
+            <div><label className="text-[9px] font-mono 
+            text-[var(--text-muted)] block mb-1">API URL</label>
+              <input type="text" value={apiUrl} onChange={e => 
+              setApiUrl(e.target.value)}
+                className="w-full bg-black/50 border 
+                border-[var(--border-primary)] rounded px-2 py-1 
+                text-[10px] font-mono text-white" 
+                placeholder="https://api.openai.com/v1/chat/completions" 
+                />
+            </div> <div><label className="text-[9px] font-mono 
+            text-[var(--text-muted)] block mb-1">API Key</label>
+              <input type="password" value={apiKey} onChange={e => 
+              setApiKey(e.target.value)}
+                className="w-full bg-black/50 border 
+                border-[var(--border-primary)] rounded px-2 py-1 
+                text-[10px] font-mono text-white" placeholder="sk-..." 
+                />
+            </div> <div><label className="text-[9px] font-mono 
+            text-[var(--text-muted)] block mb-1">模型名称</label>
+              <input type="text" value={model} onChange={e => 
+              setModel(e.target.value)}
+                className="w-full bg-black/50 border 
+                border-[var(--border-primary)] rounded px-2 py-1 
+                text-[10px] font-mono text-white" 
+                placeholder="deepseek-chat" />
+            </div> <button onClick={saveCfg} disabled={configSaving} 
+              className="px-3 py-1 rounded bg-[#D4AF37]/20 
+              text-[#D4AF37] hover:bg-[#D4AF37]/40 text-[10px] font-mono 
+              transition-colors"> {configSaving ? '保存中...' : 
+              '保存配置'}
+            </button> </div> <div className="mb-2"> <button 
+            onClick={runAi} disabled={aiLoading}
+              className="px-3 py-1.5 rounded bg-[#D4AF37]/15 
+              text-[#D4AF37] hover:bg-[#D4AF37]/30 text-[10px] font-mono 
+              flex items-center gap-1"> {aiLoading ? <Loader2 
+              className="w-3 h-3 animate-spin" /> : <Terminal 
+              className="w-3 h-3" />} {aiLoading ? '分析中...' : 
+              '立即分析'}
+            </button> </div> <div className="bg-black/20 p-3 rounded 
+          border border-[#D4AF37]/30 text-[11px] font-mono 
+          whitespace-pre-wrap leading-relaxed">
+            {aiResult} </div> </div> );
+    }
+''' content = content[:tech_end] + ai_branch + content[tech_end:] with 
+open(file, 'w') as f:
+    f.write(content) print("✅ AI 分支已插入（图标使用 Terminal）") 
+PYEOF
+# 6. 覆盖原文件
+cp /tmp/OsintPanel_temp.tsx src/components/OsintPanel.tsx
+# 7. 确保后端 API 路由存在且正确（不覆盖配置文件）
+cat > src/app/api/ai-analysis/route.ts << 'EOF' import { NextResponse } 
+from 'next/server'; import sqlite3 from 'sqlite3'; import { open } from 
+'sqlite'; import fs from 'fs'; const DB_PATH = 
+'/home/osiris-master/scanner-backend-custom/analysis.db'; const 
+CONFIG_FILE = 
+'/home/osiris-master/scanner-backend-custom/llm_config.json'; let db: 
+any = null; async function getDB() {
+  if (!db) { db = await open({ filename: DB_PATH, driver: 
+    sqlite3.Database }); await db.exec(`
+      CREATE TABLE IF NOT EXISTS analysis ( id INTEGER PRIMARY KEY 
+        AUTOINCREMENT, timestamp INTEGER NOT NULL, content TEXT NOT NULL
+      ); CREATE INDEX IF NOT EXISTS idx_timestamp ON 
+      analysis(timestamp);
+    `); const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000; await 
+    db.run('DELETE FROM analysis WHERE timestamp < ?', sevenDaysAgo);
+  }
+  return db;
+}
+async function getLatest() { const db = await getDB(); return 
+  db.get('SELECT content, timestamp FROM analysis ORDER BY timestamp 
+  DESC LIMIT 1');
+}
+async function save(content: string) { const db = await getDB(); await 
+  db.run('INSERT INTO analysis (timestamp, content) VALUES (?, ?)', 
+  Date.now(), content);
+}
+function getLLMConfig() { try { return 
+    JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+  } catch {
+    return { apiUrl: '', apiKey: '', model: '' };
+  }
+}
+async function fetchWithTimeout(url: string, timeout = 5000) { const 
+  controller = new AbortController(); const timer = setTimeout(() => 
+  controller.abort(), timeout); try {
+    const res = await fetch(`http://localhost:3117${url}`, { signal: 
+    controller.signal }); clearTimeout(timer); if (res.ok) return await 
+    res.json();
+  } catch { return null; }
+  return null;
+}
+async function aggregate() { const [markets, news, earthquakes, fires, 
+  flights, malware, space, cyber] = await Promise.all([
+    fetchWithTimeout('/api/markets'), fetchWithTimeout('/api/news'), 
+    fetchWithTimeout('/api/earthquakes'), 
+    fetchWithTimeout('/api/fires'), fetchWithTimeout('/api/flights'), 
+    fetchWithTimeout('/api/malware'), 
+    fetchWithTimeout('/api/space-weather'), 
+    fetchWithTimeout('/api/cyber-threats')
+  ]); let marketSummary = '无数据'; if (markets) { const stocks = 
+    markets.stocks ? Object.entries(markets.stocks).map(([k,v]) => 
+    `${k}: ${v.price} (${v.change_percent}%)`).join(', ') : ''; const 
+    indices = markets.indices ? 
+    Object.entries(markets.indices).map(([k,v]) => `${k}: ${v.price} 
+    (${v.change_percent}%)`).join(', ') : ''; marketSummary = `股票: 
+    ${stocks}; 指数: ${indices}; 能源: ${JSON.stringify(markets.oil)}; 
+    大宗商品: ${JSON.stringify(markets.commodities)}; 加密货币: 
+    ${JSON.stringify(markets.crypto)}`;
+  }
+  const newsSummary = news?.news ? 
+  news.news.slice(0,10).map(n=>`${n.source}: ${n.title}`).join('\n') : 
+  '无'; const quakeSummary = earthquakes ? 
+  earthquakes.slice(0,5).map(eq=>`M${eq.magnitude} 
+  ${eq.place}`).join('\n') : '无'; const fireSummary = fires?.hotspots ? 
+  fires.hotspots.map(h=>`${h.region}: ${h.detections} fires`).join('; ') 
+  : '无';
+  const flightSummary = flights?.states ? `${flights.states.length} 
+  active flights` : '无'; const malwareSummary = malware?.threats ? 
+  `${malware.threats.length} malware threats` : '无'; const spaceSummary 
+  = space ? `Kp ${space.kp_index} ${space.storm_level}` : '无'; const 
+  cyberSummary = cyber ? `${cyber.total} cyber threats` : '无'; return { 
+  marketSummary, newsSummary, quakeSummary, fireSummary, flightSummary, 
+  malwareSummary, spaceSummary, cyberSummary };
+}
+async function generate() { const cfg = getLLMConfig(); if (!cfg.apiUrl 
+  || !cfg.apiKey) return '请先在配置文件中设置 API URL 和 Key。';
+  const data = await aggregate(); const system = 
+  '你是一个专业的全球情报与市场分析师。基于以下实时数据，提供10条有用的信息，包括但不限于：股票投资建议、全球风险预警、地缘政治信息、自然灾害影响、网络安全趋势、太空天气影响等。每条信息简洁明了，用中文输出，编号1-10。'; 
+  const user = 
+  `市场与金融：${data.marketSummary}\n新闻摘要：${data.newsSummary}\n地震活动：${data.quakeSummary}\n火灾热点：${data.fireSummary}\n航班动态：${data.flightSummary}\n恶意软件威胁：${data.malwareSummary}\n空间天气：${data.spaceSummary}\n网络威胁：${data.cyberSummary}`; 
+  try {
+    const resp = await fetch(cfg.apiUrl, { method: 'POST', headers: { 
+      'Content-Type': 'application/json', Authorization: `Bearer 
+      ${cfg.apiKey}` }, body: JSON.stringify({ model: cfg.model, 
+      messages: [{ role: 'system', content: system }, { role: 'user', 
+      content: user }], temperature: 0.7, max_tokens: 2000 }), signal: 
+      AbortSignal.timeout(30000),
+    });
+    if (!resp.ok) throw new Error(`LLM 请求失败: ${resp.status}`); const 
+    json = await resp.json(); return json.choices[0].message.content;
+  } catch (err: any) {
+    return `分析失败: ${err.message}`;
+  }
+}
+let timer = null; let running = false; async function auto() { if 
+  (running) return; running = true; console.log('[AI] 自动分析中...'); 
+  try {
+    const res = await generate(); await save(res); console.log('[AI] 
+    分析完成并已缓存');
+  } catch (err) { console.error('[AI] 自动分析失败:', err); }
+  finally { running = false; }
+}
+function startAuto() { if (timer) return; setTimeout(auto, 5000); timer 
+  = setInterval(auto, 15 * 60 * 1000);
+}
+startAuto(); export async function GET() { const latest = await 
+  getLatest(); if (latest) return NextResponse.json({ content: 
+  latest.content, timestamp: latest.timestamp, cached: true }); return 
+  NextResponse.json({ content: '暂无分析数据，请点击“立即分析”生成。', 
+  cached: false });
+}
+export async function POST() { const res = await generate(); await 
+  save(res); return NextResponse.json({ content: res, timestamp: 
+  Date.now(), cached: false });
+}
+EOF
+# 8. 配置 
+# API（用于前端修改配置，但不会影响您的固定配置，因为前端修改会覆盖文件，您可以选择禁用此路由）
+mkdir -p src/app/api/ai-analysis/config cat > 
+src/app/api/ai-analysis/config/route.ts << 'EOF' import { NextResponse } 
+from 'next/server'; import fs from 'fs'; const CONFIG_FILE = 
+'/home/osiris-master/scanner-backend-custom/llm_config.json'; export 
+async function GET() {
+  try { return NextResponse.json(JSON.parse(fs.readFileSync(CONFIG_FILE, 
+    'utf8')));
+  } catch {
+    return NextResponse.json({ apiUrl: '', apiKey: '', model: '' });
+  }
+}
+export async function POST(req: Request) { const body = await 
+  req.json();
+  // 注意：这会覆盖您的固定配置，如果您不希望前端修改，可以注释掉下面的写操作 
+  // fs.writeFileSync(CONFIG_FILE, JSON.stringify(body, null, 2));
+  return NextResponse.json({ success: true });
+}
+EOF
+# 9. 重启服务
+pkill -f "next dev" screen -dmS osiris bash -c "cd /home/osiris-master 
+&& npm run dev -- --port 3117 2>&1 | tee osiris.log" echo "✅ 
+所有操作完成！" echo "您的 API 配置已写入 
+/home/osiris-master/scanner-backend-custom/llm_config.json，不会再次被覆盖。"
+echo "请等待服务启动（约10秒），然后刷新浏览器，打开侦察工具包，点击「AI分析」按钮（图标与 GitHub 相同）。"

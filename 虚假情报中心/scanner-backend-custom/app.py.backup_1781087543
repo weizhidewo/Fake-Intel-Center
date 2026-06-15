@@ -1,0 +1,183 @@
+import os
+import subprocess
+import json
+import hmac
+import re
+import ssl
+import socket
+from urllib.parse import urlparse
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+
+app = Flask(__name__)
+CORS(app)
+
+SCANNER_KEY = "my-fixed-scanner-key-32-bytes-long"
+PORT = 8080
+
+def verify_auth(request):
+    auth_header = request.headers.get('Authorization', '')
+    api_key = request.headers.get('X-API-Key', '')
+    token = auth_header.replace('Bearer ', '') if auth_header.startswith('Bearer ') else api_key
+    if token and hmac.compare_digest(token, SCANNER_KEY):
+        return True
+    key_param = request.args.get('key')
+    if key_param and hmac.compare_digest(key_param, SCANNER_KEY):
+        return True
+    return False
+
+@app.before_request
+def check_auth():
+    if request.method == 'OPTIONS':
+        return
+    if not verify_auth(request):
+        return jsonify({'error': 'Unauthorized'}), 401
+
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({'status': 'ok'})
+
+# 端口扫描（已有）
+@app.route('/api/scan/ports', methods=['GET'])
+def scan_ports():
+    target = request.args.get('target')
+    ports = request.args.get('ports', '1-1000')
+    if not target:
+        return jsonify({'error': 'target required'}), 400
+    cmd = ['nmap', '-p', ports, '--open', '-oX', '-', '-sT', target]
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        if result.returncode != 0 and result.returncode != 1:
+            return jsonify({'error': result.stderr}), 500
+        import xml.etree.ElementTree as ET
+        root = ET.fromstring(result.stdout)
+        ports_found = []
+        for port in root.findall('.//port'):
+            port_id = port.get('portid')
+            state = port.find('state').get('state')
+            if state == 'open':
+                service = port.find('service')
+                service_name = service.get('name') if service is not None else 'unknown'
+                ports_found.append({'port': int(port_id), 'service': service_name, 'state': state})
+        return jsonify({'target': target, 'ports': ports_found, 'scan_type': 'connect'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# 快速扫描（别名，复用端口扫描）
+@app.route('/scan/quick', methods=['GET'])
+def scan_quick():
+    return scan_ports()
+
+# HTTP 头扫描
+@app.route('/scan/headers', methods=['GET'])
+def scan_headers():
+    target = request.args.get('target')
+    if not target:
+        return jsonify({'error': 'target required'}), 400
+    # 确保有协议前缀
+    if not target.startswith(('http://', 'https://')):
+        target = 'https://' + target
+    try:
+        cmd = ['curl', '-s', '-I', '-L', '--max-time', '15', target]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=20)
+        headers = {}
+        for line in result.stdout.split('\n'):
+            if ': ' in line:
+                key, val = line.split(': ', 1)
+                headers[key] = val.strip()
+        return jsonify({'target': target, 'headers': headers})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# SSL/TLS 证书扫描
+@app.route('/scan/ssl', methods=['GET'])
+def scan_ssl():
+    target = request.args.get('target')
+    if not target:
+        return jsonify({'error': 'target required'}), 400
+    # 提取域名和端口
+    host = target.split(':')[0] if ':' not in target else target.split(':')[0]
+    port = 443
+    if ':' in target:
+        try:
+            port = int(target.split(':')[1])
+        except:
+            port = 443
+    try:
+        context = ssl.create_default_context()
+        with socket.create_connection((host, port), timeout=10) as sock:
+            with context.wrap_socket(sock, server_hostname=host) as ssock:
+                cert = ssock.getpeercert()
+                issuer = dict(x[0] for x in cert['issuer']) if isinstance(cert['issuer'], tuple) else {}
+                subject = dict(x[0] for x in cert['subject']) if isinstance(cert['subject'], tuple) else {}
+                result = {
+                    'subject': subject.get('commonName', ''),
+                    'issuer': issuer.get('commonName', ''),
+                    'expiry': cert.get('notAfter', ''),
+                    'serial': cert.get('serialNumber', '')
+                }
+                return jsonify({'target': target, 'ssl': result})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# 子域名扫描（简单 DNS 枚举，使用常见子域列表）
+@app.route('/scan/subdomains', methods=['GET'])
+def scan_subdomains():
+    target = request.args.get('target')
+    if not target:
+        return jsonify({'error': 'target required'}), 400
+    # 常见子域
+    common = ['www', 'mail', 'ftp', 'localhost', 'webmail', 'smtp', 'pop', 'ns1', 'webdisk', 'ns2',
+              'cpanel', 'whm', 'autodiscover', 'autoconfig', 'm', 'imap', 'test', 'ns', 'blog', 'pop3',
+              'dev', 'www2', 'admin', 'forum', 'news', 'vpn', 'ns3', 'mail2', 'new', 'mysql', 'old',
+              'lists', 'support', 'mobile', 'mx', 'static', 'docs', 'beta', 'shop', 'sql', 'secure',
+              'demo', 'cp', 'calendar', 'wiki', 'web', 'media', 'email', 'images', 'img', 'www1',
+              'intranet', 'portal', 'video', 'sip', 'dns2', 'api', 'cdn', 'stats', 'dns1', 'ns4']
+    found = []
+    for sub in common:
+        domain = f"{sub}.{target}"
+        try:
+            result = subprocess.run(['dig', '+short', domain], capture_output=True, text=True, timeout=5)
+            if result.returncode == 0 and result.stdout.strip():
+                found.append({'domain': domain, 'ip': result.stdout.strip().split('\n')[0]})
+        except:
+            continue
+    return jsonify({'target': target, 'subdomains': found})
+
+# 技术栈检测（简单模式匹配，基于 WhatWeb 风格）
+@app.route('/scan/tech', methods=['GET'])
+def scan_tech():
+    target = request.args.get('target')
+    if not target:
+        return jsonify({'error': 'target required'}), 400
+    if not target.startswith(('http://', 'https://')):
+        target = 'https://' + target
+    tech = []
+    try:
+        cmd = ['curl', '-s', '-L', '--max-time', '10', target]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+        html = result.stdout
+        # 简单检测常见技术
+        if re.search(r'wordpress', html, re.I):
+            tech.append('WordPress')
+        if re.search(r'jquery', html, re.I):
+            tech.append('jQuery')
+        if re.search(r'bootstrap', html, re.I):
+            tech.append('Bootstrap')
+        if re.search(r'react', html, re.I):
+            tech.append('React')
+        if re.search(r'vue', html, re.I):
+            tech.append('Vue.js')
+        if re.search(r'nginx', html, re.I):
+            tech.append('Nginx')
+        if re.search(r'apache', html, re.I):
+            tech.append('Apache')
+        if re.search(r'cloudflare', html, re.I):
+            tech.append('CloudFlare')
+        # 还可添加更多规则
+        return jsonify({'target': target, 'technologies': tech})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=PORT)

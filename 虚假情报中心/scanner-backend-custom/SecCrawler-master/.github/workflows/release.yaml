@@ -1,0 +1,37 @@
+name: 🎉 Release Go Binary
+on: 
+  release:
+    types: [created]
+  workflow_dispatch:
+
+jobs:
+  releases-matrix:
+    name: Release Go Binary
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # build and publish in parallel: linux/386, linux/amd64, linux/arm64, windows/386, windows/amd64, darwin/amd64, darwin/arm64
+        goos: [linux, windows, darwin]
+        goarch: ["386", amd64, arm64]
+        exclude:  
+          - goarch: "386"
+            goos: darwin
+          - goarch: arm64
+            goos: windows
+    steps:
+    - name: Short tag Version
+      id: short_tag
+      run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+
+    - uses: actions/checkout@v2
+    - uses: wangyoucao577/go-release-action@v1.22
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        goos: ${{ matrix.goos }}
+        goarch: ${{ matrix.goarch }}
+        goversion: 1.16
+        overwrite: true
+        # build_command: go build
+        build_flags: -trimpath -tags=jsoniter
+        ldflags: -s -w
+        asset_name: SecCrawler_${{ matrix.goos }}_${{ matrix.goarch }}_${{ steps.short_tag.outputs.VERSION }}
