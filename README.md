@@ -7,9 +7,11 @@
 2.添加了一些数据来源为数据分析做充足准备
 
 3.添加漏洞与安全情报检测模块，并利用AI对文本进行简单处理显示与前端（根据时间排序，若有需求可自己在设置修改获取数据量与爬取间隔）
+
 <img width="567" height="938" alt="9$ $KX}W`980`~R%J% ZA(M" src="https://github.com/user-attachments/assets/3cabc8ea-9c36-4094-ad9d-4b4d5cb0039d" />
 
 4.添加AI分析功能，调用项目内API传输数据至文本预处理模型进行核心内容处理（推荐使用免费小模型），小模型处理完毕后推送至推理模型分析全球局势并生成对应卡片（最后一条已固定为各领域短中期发展预测）
+
 <img width="596" height="950" alt=") {4IK(LU6LQ`M@SJA1$TF1" src="https://github.com/user-attachments/assets/7c3add89-2bbd-4851-95ce-fc99eb544ee7" />
 
 <img width="552" height="937" alt="2OGXG_JA9~NJUG$VWHCA$PK" src="https://github.com/user-attachments/assets/04734fc6-46c0-4c25-938f-ef9ed914c656" />
