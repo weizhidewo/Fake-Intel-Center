@@ -1,4 +1,4 @@
-<img width="552" height="937" alt="image" src="https://github.com/user-attachments/assets/f86d197f-1278-43a9-a4a7-8843909bb3ef" /><img width="552" height="937" alt="image" src="https://github.com/user-attachments/assets/ea57b695-56b7-4ac1-aab3-d988cb7f898d" /><img width="586" height="911" alt="8_TZSW C4X8ZPN}8)7JEMJ9" src="https://github.com/user-attachments/assets/61bc70b9-2c67-4ce8-9f18-18e74caae4e1" />本项目基于osiris开发，若遇见bug欢迎反馈，正在找寻能接入漏扫的好项目或其他功能，若有好的web扫描器与MCP网关后端或开源前端，欢迎联系qq：1824675740，本项目较原项目主要添加部分功能与通用代理设置以及数据对齐，方便爬取使用并扩充部分数据来源
+本项目基于osiris开发，若遇见bug欢迎反馈，正在找寻能接入漏扫的好项目或其他功能，若有好的web扫描器与MCP网关后端或开源前端，欢迎联系qq：1824675740，本项目较原项目主要添加部分功能与通用代理设置以及数据对齐，方便爬取使用并扩充部分数据来源
 
 ###核心开发点
 1.补齐原项目缺少的部分侦察包工具（如端口扫描、HTTP头探测、SSL/TSL查询、子域名枚举、技术栈探测，并聚合在工具包下的app.py内，如有需要请自行查看所用工具并安装使用，响应请勿修改，若需修改前端接收的响应也需做出对应修改）
