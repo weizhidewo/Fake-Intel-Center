@@ -8,6 +8,8 @@
 
 3.添加AI分析功能，调用项目内API传输数据至文本预处理模型进行核心内容处理（推荐使用免费小模型），小模型处理完毕后推送至推理模型分析全球局势并生成对应卡片（最后一条已固定为各领域短中期发展预测）
 <img width="596" height="950" alt=") {4IK(LU6LQ`M@SJA1$TF1" src="https://github.com/user-attachments/assets/7c3add89-2bbd-4851-95ce-fc99eb544ee7" />
+![Uploading 8_TZSW]C4X8ZPN}8)7JEMJ9.png…]()
+
 
 4.添加了一些数据来源为数据分析做充足准备
 
